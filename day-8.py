@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-import functools
-
 def partOne(input):
     total = 0
 
@@ -126,8 +124,6 @@ def main():
     input = f.read().splitlines()
 
     inputMatrix = map(lambda x: list(x), input)
-
-    print(calculateScore(1, 2, input))
     
     print(partOne(inputMatrix))
     print(partTwo(inputMatrix))
