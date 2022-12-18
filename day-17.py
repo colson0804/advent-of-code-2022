@@ -3,79 +3,118 @@
 import os
 import time
 import sys
+import operator
 
 NUMBER_OF_ROCKS = 5
 
 CAVE = [['.' for _ in range(0, 7)] for _ in range(0, 10)]
+ROCK_STARTING_POSITIONS = [set([(0, 2), (0, 3), (0, 4), (0, 5)]), set([(0, 3), (1, 2), (1, 3), (1, 4), (2, 3)]), set([(0, 4), (1, 4), (2, 2), (2, 3), (2, 4)]), set([(0, 2), (1, 2), (2, 2), (3, 2)]), set([(0, 2), (0, 3), (1, 2), (1, 3)])]
 
 def printCave():
+    os.system("clear")
     for row in CAVE:
-        print("|" + ''.join(row) + "|")
+        sys.stdout.write("|" + ''.join(row) + "|\n")
     
-    print("+-------+")
+    sys.stdout.write("+-------+\n")
+    sys.stdout.flush()
 
 def clearCave():
     global CAVE
     CAVE = [['.' for _ in range(0, 7)] for _ in range(0, 10)]
 
-def printRock(rock, isFalling):
+def clearRock(rock):
+    global CAVE
+    for point in rock:
+        CAVE[point[0]][point[1]] = '.'
+
+def placeRock(rock, isFalling):
     for point in rock:
         CAVE[point[0]][point[1]] = "@" if isFalling else "#"
-    
-    printCave()
 
-def spawnRock(rock):
-    highPoint = len(CAVE) - 1
+def shiftRock(rock, operator):
+    newRock = set()
+    for point in rock:
+        if operator == '<':
+            if min(map(lambda x: x[1], rock)) > 0:
+                newY = point[1] - 1
+                newRock.add((point[0], newY))
+            else:
+                return rock
+        elif operator == '>':
+            if max(map(lambda x: x[1], rock)) + 1 < len(CAVE[0]):
+                newY = point[1] + 1
+                newRock.add((point[0], newY))
+            else:
+                return rock
+    return newRock
+
+def dropRock(rock):
+    # we're checking the lower bounds outside of this method
+    newRock = set()
+    for point in rock:
+        newRock.add((point[0] + 1, point[1]))
+    return newRock
+
+def highPoint():
     i = 0
     while i < len(CAVE):
         for space in CAVE[i]:
             if space == "#":
-                highPoint = i 
+                return i
         i += 1
+    
+    return len(CAVE) - 1
+
+def spawnRock(iteration):
+    rock = ROCK_STARTING_POSITIONS[iteration % len(ROCK_STARTING_POSITIONS)]
 
     rockBottom = max(map(lambda x: x[0], rock))
 
     newRock = set()
     for point in rock:
-        displacement = highPoint - 3 - rockBottom
+        displacement = highPoint() - 3 - rockBottom
         newRock.add((point[0] + displacement, point[1]))
     
     return newRock
 
 
 def partOne(input):
-    rocks = [set([(0, 2), (0, 3), (0, 4), (0, 5)]), set([(0, 3), (1, 2), (1, 3), (1, 4), (2, 3)]), set([(0, 4), (1, 4), (2, 2), (2, 3), (2, 4)]), set([(0, 2), (1, 2), (2, 2), (3, 2)]), set([(0, 2), (0, 3), (1, 2), (1, 3)])]
-    # Create block at (0, 2)
-
     j = 0 
 
     printCave()
 
     for i in range(0, NUMBER_OF_ROCKS):
+        time.sleep(1)
+
         jetPos = j % len(input)
-        currentRock = rocks[i % len(rocks)]
+        currentRock = spawnRock(i)
 
-        currentRock = spawnRock(currentRock)
+        placeRock(currentRock, True)
+        printCave()
 
-        printRock(currentRock, True)
+        # clearCave()
 
-        clearCave()
+        while True:
+            time.sleep(0.5)
 
-    #     while True: # while not on floor 
-    #         if input[jetPos] == "<":
-    #             # move left 
-    #             print("left")
-    #         elif input[jetPos] == ">":
-    #             print("right")
+            # clearCave()
+            clearRock(currentRock)
 
-    #         j += 1 
+            currentRock = shiftRock(currentRock, input[jetPos])
+            j += 1
+            jetPos = j % len(input)
 
-    #         # if can move down 
-    #         # move down 
-    #         # else go to next rock 
+            # if currentRock[]
+            if max(map(lambda x: x[0], currentRock)) < highPoint():
+                currentRock = dropRock(currentRock)
+                # restRock
+            else: 
+                placeRock(currentRock, False)
+                break
 
+            placeRock(currentRock, True)
+            printCave()
 
-    
     return 0
 
 def partTwo(input):
