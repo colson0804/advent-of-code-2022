@@ -7,6 +7,7 @@ import operator
 
 NUMBER_OF_ROCKS = 5
 
+ROCK_LOCATIONS = set()
 CAVE = [['.' for _ in range(0, 7)] for _ in range(0, 10)]
 ROCK_STARTING_POSITIONS = [set([(0, 2), (0, 3), (0, 4), (0, 5)]), set([(0, 3), (1, 2), (1, 3), (1, 4), (2, 3)]), set([(0, 4), (1, 4), (2, 2), (2, 3), (2, 4)]), set([(0, 2), (1, 2), (2, 2), (3, 2)]), set([(0, 2), (0, 3), (1, 2), (1, 3)])]
 
@@ -30,20 +31,31 @@ def clearRock(rock):
 def placeRock(rock, isFalling):
     for point in rock:
         CAVE[point[0]][point[1]] = "@" if isFalling else "#"
+        if not isFalling:
+            ROCK_LOCATIONS.add(point)
 
 def shiftRock(rock, operator):
     newRock = set()
+
     for point in rock:
         if operator == '<':
             if min(map(lambda x: x[1], rock)) > 0:
                 newY = point[1] - 1
-                newRock.add((point[0], newY))
+                newPoint = (point[0], newY)
+                if newPoint not in ROCK_LOCATIONS:
+                    newRock.add(newPoint)
+                else:
+                    return rock
             else:
                 return rock
         elif operator == '>':
             if max(map(lambda x: x[1], rock)) + 1 < len(CAVE[0]):
                 newY = point[1] + 1
-                newRock.add((point[0], newY))
+                newPoint = (point[0], newY)
+                if newPoint not in ROCK_LOCATIONS:
+                    newRock.add(newPoint)
+                else:
+                    return rock
             else:
                 return rock
     return newRock
@@ -52,18 +64,18 @@ def dropRock(rock):
     # we're checking the lower bounds outside of this method
     newRock = set()
     for point in rock:
-        newRock.add((point[0] + 1, point[1]))
-    return newRock
+        newPoint = (point[0] + 1, point[1])
+        if newPoint not in ROCK_LOCATIONS:
+            newRock.add(newPoint)
+        else:
+            return (rock, False)
+    return (newRock, True)
 
 def highPoint():
-    i = 0
-    while i < len(CAVE):
-        for space in CAVE[i]:
-            if space == "#":
-                return i
-        i += 1
-    
-    return len(CAVE) - 1
+    if ROCK_LOCATIONS:
+        return max(map(lambda x: x[0], ROCK_LOCATIONS))
+    else:
+        return len(CAVE) - 1
 
 def spawnRock(iteration):
     rock = ROCK_STARTING_POSITIONS[iteration % len(ROCK_STARTING_POSITIONS)]
@@ -80,34 +92,31 @@ def spawnRock(iteration):
 
 def partOne(input):
     j = 0 
+    jetPos = 0
 
     printCave()
 
     for i in range(0, NUMBER_OF_ROCKS):
         time.sleep(1)
 
-        jetPos = j % len(input)
         currentRock = spawnRock(i)
 
         placeRock(currentRock, True)
         printCave()
 
-        # clearCave()
-
         while True:
             time.sleep(0.5)
 
-            # clearCave()
             clearRock(currentRock)
 
             currentRock = shiftRock(currentRock, input[jetPos])
-            j += 1
-            jetPos = j % len(input)
+            jetPos = (jetPos + 1) % len(input)
 
-            # if currentRock[]
             if max(map(lambda x: x[0], currentRock)) < highPoint():
-                currentRock = dropRock(currentRock)
-                # restRock
+                (currentRock, didDrop) = dropRock(currentRock)
+                if not didDrop: # blech
+                    placeRock(currentRock, False)
+                    break
             else: 
                 placeRock(currentRock, False)
                 break
